@@ -142,6 +142,8 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
 			j_cdbs->copy_prev_load = true;
 		}
 
+		load = 100 * (wall_time - idle_time) / wall_time;
+
 		if (load > max_load)
 			max_load = load;
 	}

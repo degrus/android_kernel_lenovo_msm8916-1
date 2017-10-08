@@ -1762,6 +1762,26 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		mmc_request_done(host->mmc, mrq);
 		sdhci_runtime_pm_put(host);
 		return;
+
+	present = mmc_gpio_get_cd(host->mmc);
+
+	spin_lock_irqsave(&host->lock, flags);
+
+	WARN_ON(host->mrq != NULL);
+
+#ifndef SDHCI_USE_LEDS_CLASS
+	sdhci_activate_led(host);
+#endif
+
+	/*
+	 * Ensure we don't send the STOP for non-SET_BLOCK_COUNTED
+	 * requests if Auto-CMD12 is enabled.
+	 */
+	if (!mrq->sbc && (host->flags & SDHCI_AUTO_CMD12)) {
+		if (mrq->stop) {
+			mrq->data->stop = NULL;
+			mrq->stop = NULL;
+		}
 	}
 
 	/*
@@ -1771,7 +1791,6 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	 *     zero: cd-gpio is used, and card is removed
 	 *     one: cd-gpio is used, and card is present
 	 */
-	present = mmc_gpio_get_cd(host->mmc);
 	if (present < 0) {
 		/* If polling, assume that the card is always present. */
 		if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)

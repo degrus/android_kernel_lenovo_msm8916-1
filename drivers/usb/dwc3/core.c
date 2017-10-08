@@ -1,4 +1,4 @@
-/**
+/*
  * core.c - DesignWare USB3 DRD Controller Core file
  *
  * Copyright (C) 2010-2011 Texas Instruments Incorporated - http://www.ti.com
@@ -821,11 +821,28 @@ static int dwc3_remove(struct platform_device *pdev)
 {
 	struct dwc3	*dwc = platform_get_drvdata(pdev);
 
-	usb_phy_set_suspend(dwc->usb2_phy, 1);
-	usb_phy_set_suspend(dwc->usb3_phy, 1);
+	dwc3_debugfs_exit(dwc);
+
+	switch (dwc->mode) {
+	case DWC3_MODE_DEVICE:
+		dwc3_gadget_exit(dwc);
+		break;
+	case DWC3_MODE_HOST:
+		dwc3_host_exit(dwc);
+		break;
+	case DWC3_MODE_DRD:
+		dwc3_host_exit(dwc);
+		dwc3_gadget_exit(dwc);
+		break;
+	default:
+		/* do nothing */
+		break;
+	}
+
+	dwc3_event_buffers_cleanup(dwc);
+	dwc3_free_event_buffers(dwc);
 
 	pm_runtime_disable(&pdev->dev);
-
 	dwc3_debugfs_exit(dwc);
 
 	switch (dwc->mode) {
@@ -847,7 +864,14 @@ static int dwc3_remove(struct platform_device *pdev)
 
 	dwc3_event_buffers_cleanup(dwc);
 	dwc3_free_event_buffers(dwc);
+
+        usb_phy_set_suspend(dwc->usb2_phy, 1);
+        usb_phy_set_suspend(dwc->usb3_phy, 1);
+
 	dwc3_core_exit(dwc);
+
+	pm_runtime_put_sync(&pdev->dev);
+	pm_runtime_disable(&pdev->dev);
 
 	return 0;
 }

@@ -316,8 +316,11 @@ int module_finalize(const Elf32_Ehdr *hdr, const Elf_Shdr *sechdrs,
 			maps[ARM_SEC_UNLIKELY].txt_sec = s;
 		else if (strcmp(".text.hot", secname) == 0)
 			maps[ARM_SEC_HOT].txt_sec = s;
+<<<<<<< HEAD
 		else if (strcmp(".ref.text", secname) == 0)
 			maps[ARM_SEC_REF].txt_sec = s;
+=======
+>>>>>>> 30e2adb09875... ARM: 7829/1: Add ".text.unlikely" and ".text.hot" to arm unwind tables
 	}
 
 	for (i = 0; i < ARM_SEC_MAX; i++)
